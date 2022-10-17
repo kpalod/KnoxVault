@@ -1,19 +1,22 @@
+from distutils import filelist
 import os
 import re
 import io
+from auxiliary import *
 from unicodedata import name
 import zlib
 from werkzeug.utils import secure_filename
 from flask import Response
 from cs50 import SQL
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, flash, jsonify, redirect, render_template, request, session ,url_for
+from flask import Flask, flash, jsonify, redirect, render_template, request, session ,url_for,send_file
 from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 import face_recognition
+from io import BytesIO
 from PIL import Image
 from base64 import b64encode, b64decode
 import re
@@ -41,15 +44,15 @@ class FileTable(db.Model):
     __tablename__ = 'USER_FILES'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
-    tag = db.Column(db.String(100))
     file = db.Column(db.LargeBinary)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 
-    def __init__(self, name, tag, file):
+    def __init__(self, name, file,user_id):
         self.name = name
-        self.tag = tag
+        # self.tag = tag
         self.file = file
+        self.user_id=user_id
 
 
     def __repr__(self):
@@ -79,13 +82,13 @@ Session(app)
 @login_required
 def home():
 
-
     return redirect("/home")
 
 @app.route("/home")
 @login_required
 def index():
-    return render_template("index.html")
+    files = FileTable.query.filter_by(user_id=session["user_id"]).all()
+    return render_template("index.html",files=files)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -116,8 +119,7 @@ def login():
 
         # Remember which user has logged in
         session["user_id"] = user.id
-
-        session['user'] = user.username
+        session['user_name'] = user.username
 
         return redirect("/")
 
@@ -276,6 +278,28 @@ def facesetup():
 
     else:
         return render_template("face.html")
+    
+@app.route("/upload",methods=["GET","POST"])
+@login_required
+def upload():
+    if request.method == "POST":
+        file = request.files['inputFile']
+        data = file.read()   
+        newFile = FileTable(name=file.filename, file=data,user_id=session["user_id"])
+        db.session.add(newFile)
+        db.session.commit()
+        return render_template("upload.html",message=1)
+    else:
+        return render_template("upload.html")
+    
+@app.route('/retrieve/<id>')
+def retrieve(id):
+    file = FileTable.query.filter_by(id=id).first()
+
+    if not file:
+        return render_template('error.html')
+
+    return send_file(BytesIO(file.file), attachment_filename=f'{file.name}')    
 
 def errorhandler(e):
     """Handle error"""

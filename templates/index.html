@@ -7,6 +7,24 @@ index
 <body> 
  <h1>Testing face recogonition and private vault.</h1>
  <h2>Welcome user {{ session.user_name }}</h2>
+ {% for item in files %}
+
+        <div class="row item_custom">
+          <div class="col-md-11 list_custom">
+            <div style="overflow: hidden;">
+              <a href="/retrieve/{{item.id}}" target="_blank">
+
+                <h4 class="custom_txt">{{ item.name }}</h4>
+
+              </a>
+
+              </div>
+            </div>
+          </div>
+
+    {% endfor %}
+ <a href="/upload">Go to upload</a>
+ 
 </body>
 
 </html>
