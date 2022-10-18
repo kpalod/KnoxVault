@@ -299,7 +299,19 @@ def retrieve(id):
     if not file:
         return render_template('error.html')
 
-    return send_file(BytesIO(file.file), attachment_filename=f'{file.name}')    
+    return send_file(BytesIO(file.file), download_name=f'{file.name}')
+
+@app.route('/delete/<id>')
+def delete(id):
+    file = FileTable.query.filter_by(id=id).first()
+
+    if not file:
+        return render_template('error.html')
+
+    db.session.delete(file)
+    db.session.commit()
+
+    return redirect(url_for('index'))    
 
 def errorhandler(e):
     """Handle error"""

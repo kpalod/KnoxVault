@@ -1,16 +1,49 @@
 /*
     DEMO STYLE
 */
-@import "https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700";
-
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;700&display=swap');
 
 body {
-    font-family: 'Poppins', sans-serif;
-    background: #fafafa;
+    font-family: 'Raleway', sans-serif;
+    background: #dae4e5;
 }
 
+.btn-upload {
+    margin: 3rem 0;
+    padding: 1rem 2rem;
+    color: #0e0e0e;
+    background: aqua;
+    border-radius: 1rem;
+}
+.table td {
+    padding: 1rem 0;
+}
+.form-control {
+    padding: .5rem 1rem;
+}
+.btn-delete {
+    padding: 1rem 2rem;
+    color: #0e0e0e;
+    color: white;
+    background: red;
+    border-radius: .5rem;
+ }
+ 
+h1 {
+    font-weight: 600;
+    font-size: 2.5rem;
+}
+
+h2 {
+    font-weight: 400;
+    font-size: 2rem;
+}
+h3{
+    font-weight: 400;
+    font-size: 1.5rem;
+}
 p {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Raleway', sans-serif;
     font-size: 1.1em;
     font-weight: 300;
     line-height: 1.7em;
