@@ -23,12 +23,18 @@ from base64 import b64encode, b64decode
 import re
 import pymysql
 from dotenv import load_dotenv
-
+import boto3
+import tempfile
+import matplotlib.image as mpimg
 from helpers import apology, login_required
 # Configure application
 load_dotenv()
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
+s3 = boto3.client('s3',
+                    aws_access_key_id=os.getenv("ACCESS_KEY_ID"),
+                    aws_secret_access_key= os.getenv("ACCESS_SECRET_KEY")
+                     )
 
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
@@ -194,20 +200,32 @@ def facereg():
         
         new_image_handle.write(decoded_data)
         new_image_handle.close()
-        try:
-            image_of_bill = face_recognition.load_image_file(
-            './static/face/'+str(id_)+'.jpg')
-        except:
-            return render_template("camera.html",message = 5)
+        # s3_read=boto3.resource('s3', region_name="us-east-1")
+        # bucket = s3_read.Bucket(os.getenv("BUCKET_NAME"))
+        # object = bucket.Object(str(id_)+'.jpg')
+        # #image_load = s3.get_object(Bucket=os.getenv("BUCKET_NAME"),Key=str(id_)+'.jpg')
+        # temp = tempfile.NamedTemporaryFile(mode='w')
+        # object.download_fileobj(temp.name)
+        # img = mpimg.imread(temp.name)
+        with tempfile.TemporaryFile(mode='w+b') as f:
+            s3.download_fileobj(os.getenv("BUCKET_NAME"), str(id_)+'.jpg', f)
+                    
+            try:
+                # image_of_bill = face_recognition.load_image_file(
+                # './static/face/'+str(id_)+'.jpg')
+                image_of_bill = face_recognition.load_image_file(f)
+            except:
+                return render_template("camera.html",message = 5)
 
-        bill_face_encoding = face_recognition.face_encodings(image_of_bill)[0]
+            bill_face_encoding = face_recognition.face_encodings(image_of_bill)[0]
 
-        unknown_image = face_recognition.load_image_file(
-        './static/face/unknown/'+str(id_)+'.jpg')
-        try:
-            unknown_face_encoding = face_recognition.face_encodings(unknown_image)[0]
-        except:
-            return render_template("camera.html",message = 2)
+            unknown_image = face_recognition.load_image_file(
+            './static/face/unknown/'+str(id_)+'.jpg')
+            try:
+                unknown_face_encoding = face_recognition.face_encodings(unknown_image)[0]
+            except:
+                return render_template("camera.html",message = 2)
+            f.close()
 
 
 #       compare faces
@@ -217,8 +235,10 @@ def facereg():
             user = User.query.filter_by(username=input_username).first()
             session["user_id"] = user.id
             session['user_name'] = user.username
+            os.remove('./static/face/unknown/'+str(id_)+'.jpg')
             return redirect("/")
         else:
+            os.remove('./static/face/unknown/'+str(id_)+'.jpg')
             return render_template("camera.html",message=3)
 
 
@@ -233,7 +253,7 @@ def facesetup():
 
 
         encoded_image = (request.form.get("pic")+"==").encode('utf-8')
-
+    
 
         id_=User.query.filter_by(id=session["user_id"]).first().id
         # id_ = db.execute("SELECT id FROM users WHERE id = :user_id", user_id=session["user_id"])[0]["id"]    
@@ -252,6 +272,8 @@ def facesetup():
             bill_face_encoding = face_recognition.face_encodings(image_of_bill)[0]
         except:    
             return render_template("face.html",message = 1)
+        s3.upload_file('./static/face/'+str(id_)+'.jpg',os.getenv("BUCKET_NAME"),str(id_)+'.jpg')
+        os.remove('./static/face/'+str(id_)+'.jpg')
         return redirect("/home")
 
     else:
