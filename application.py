@@ -14,54 +14,26 @@ from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
+from flask_bcrypt import Bcrypt
 from datetime import datetime
 import face_recognition
 from io import BytesIO
 from PIL import Image
 from base64 import b64encode, b64decode
 import re
+import pymysql
+from dotenv import load_dotenv
 
 from helpers import apology, login_required
 # Configure application
+load_dotenv()
 app = Flask(__name__)
-
+bcrypt = Bcrypt(app)
 
 app.config["TEMPLATES_AUTO_RELOAD"] = True
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://admin:admin123@vault-database.c20xjrjv06vi.us-east-1.rds.amazonaws.com:3306/site'
-
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 db = SQLAlchemy(app)
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(60), nullable=False)
-    file = db.relationship('FileTable', backref='author', lazy=True)
-    
-    def __repr__(self):
-        return f"User('{self.username}', '{self.email}')"
-        
-
-class FileTable(db.Model):
-    __tablename__ = 'USER_FILES'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    file = db.Column(db.LargeBinary)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-
-    def __init__(self, name, file,user_id):
-        self.name = name
-        # self.tag = tag
-        self.file = file
-        self.user_id=user_id
-
-
-    def __repr__(self):
-        return f'FILE ID: {self.id} \n FILE NAME: {self.name} \n FILE TAG: {self.tag} \n'
-
-
-
 
 @app.after_request
 def after_request(response):
@@ -116,7 +88,9 @@ def login():
 
         user = User.query.filter_by(username=input_username).first() 
 
-        if user is None or not check_password_hash(user.password, input_password):
+        # if user is None or not check_password_hash(user.password, input_password):
+       # if user is None:
+        if user is None or not bcrypt.check_password_hash(user.password, input_password):
             return render_template("login.html",messager = 3)
 
         # Remember which user has logged in
@@ -174,7 +148,9 @@ def register():
             # new_user = db.execute("INSERT INTO users (username, hash) VALUES (:username, :password)",
             #                       username=input_username,
             #                       password=generate_password_hash(input_password, method="pbkdf2:sha256", salt_length=8),)
-            hashed_password=generate_password_hash(input_password, method="pbkdf2:sha256", salt_length=8)
+            
+            #hashed_password=(input_password, method="pbkdf2:sha256", salt_length=8)
+            hashed_password=bcrypt.generate_password_hash(input_password)
             new_user = User(username=input_username,email=input_email,password=hashed_password)
             db.session.add(new_user)
             db.session.commit()
@@ -314,6 +290,36 @@ def delete(id):
     db.session.commit()
 
     return redirect(url_for('index'))    
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(20), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(60), nullable=False)
+    file = db.relationship('FileTable', backref='author', lazy=True)
+    
+    def __repr__(self):
+        return f"User('{self.username}', '{self.email}')"
+        
+
+class FileTable(db.Model):
+    __tablename__ = 'USER_FILES'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    file = db.Column(db.LargeBinary)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+
+    def __init__(self, name, file,user_id):
+        self.name = name
+        # self.tag = tag
+        self.file = file
+        self.user_id=user_id
+
+
+    def __repr__(self):
+        return f'FILE ID: {self.id} \n FILE NAME: {self.name} \n FILE TAG: {self.tag} \n'
+db.drop_all()
+db.create_all()
 
 def errorhandler(e):
     """Handle error"""
