@@ -1,63 +1,19 @@
-from distutils import filelist
 import os
-import re
-import io
-from auxiliary import *
-from unicodedata import name
-import zlib
-from werkzeug.utils import secure_filename
-from flask import Response
-from cs50 import SQL
-from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, flash, jsonify, redirect, render_template, request, session ,url_for,send_file
-from flask_session import Session
-from tempfile import mkdtemp
-from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
-from werkzeug.security import check_password_hash, generate_password_hash
-from flask_bcrypt import Bcrypt
-from datetime import datetime
-import face_recognition
-from io import BytesIO
-from PIL import Image
 from base64 import b64encode, b64decode
-import re
-import pymysql
-from dotenv import load_dotenv
-import boto3
+from vault import app
+from vault import s3
+from vault import bcrypt
+from vault import db
+from vault.helpers import apology, login_required
+from vault.models import User, FileTable
+import face_recognition
+from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
+from PIL import Image
+from io import BytesIO
+import zlib
+
 import tempfile
-import matplotlib.image as mpimg
-from helpers import apology, login_required
-# Configure application
-load_dotenv()
-app = Flask(__name__)
-bcrypt = Bcrypt(app)
-s3 = boto3.client('s3',
-                    aws_access_key_id=os.getenv("ACCESS_KEY_ID"),
-                    aws_secret_access_key= os.getenv("ACCESS_SECRET_KEY")
-                     )
-
-app.config["TEMPLATES_AUTO_RELOAD"] = True
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
-db = SQLAlchemy(app)
-
-@app.after_request
-def after_request(response):
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Expires"] = 0
-    response.headers["Pragma"] = "no-cache"
-    return response
-
-
-# Custom filter
-
-
-# Configure session to use filesystem (instead of signed cookies)
-app.config["SESSION_FILE_DIR"] = mkdtemp()
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
-Session(app)
-
 @app.route("/")
 @login_required
 def home():
@@ -151,11 +107,6 @@ def register():
             return render_template("register.html",messager = 5)
 
         else:
-            # new_user = db.execute("INSERT INTO users (username, hash) VALUES (:username, :password)",
-            #                       username=input_username,
-            #                       password=generate_password_hash(input_password, method="pbkdf2:sha256", salt_length=8),)
-            
-            #hashed_password=(input_password, method="pbkdf2:sha256", salt_length=8)
             hashed_password=bcrypt.generate_password_hash(input_password)
             new_user = User(username=input_username,email=input_email,password=hashed_password)
             db.session.add(new_user)
@@ -196,17 +147,10 @@ def facereg():
         
         decoded_data = b64decode(uncompressed_data)
         
-        new_image_handle = open('./static/face/unknown/'+str(id_)+'.jpg', 'wb')
+        new_image_handle = open('vault/static/face/unknown/'+str(id_)+'.jpg', 'wb')
         
         new_image_handle.write(decoded_data)
         new_image_handle.close()
-        # s3_read=boto3.resource('s3', region_name="us-east-1")
-        # bucket = s3_read.Bucket(os.getenv("BUCKET_NAME"))
-        # object = bucket.Object(str(id_)+'.jpg')
-        # #image_load = s3.get_object(Bucket=os.getenv("BUCKET_NAME"),Key=str(id_)+'.jpg')
-        # temp = tempfile.NamedTemporaryFile(mode='w')
-        # object.download_fileobj(temp.name)
-        # img = mpimg.imread(temp.name)
         with tempfile.TemporaryFile(mode='w+b') as f:
             s3.download_fileobj(os.getenv("BUCKET_NAME"), str(id_)+'.jpg', f)
                     
@@ -220,7 +164,7 @@ def facereg():
             bill_face_encoding = face_recognition.face_encodings(image_of_bill)[0]
 
             unknown_image = face_recognition.load_image_file(
-            './static/face/unknown/'+str(id_)+'.jpg')
+            'vault/static/face/unknown/'+str(id_)+'.jpg')
             try:
                 unknown_face_encoding = face_recognition.face_encodings(unknown_image)[0]
             except:
@@ -235,10 +179,10 @@ def facereg():
             user = User.query.filter_by(username=input_username).first()
             session["user_id"] = user.id
             session['user_name'] = user.username
-            os.remove('./static/face/unknown/'+str(id_)+'.jpg')
+            os.remove('vault/static/face/unknown/'+str(id_)+'.jpg')
             return redirect("/")
         else:
-            os.remove('./static/face/unknown/'+str(id_)+'.jpg')
+            os.remove('vault/static/face/unknown/'+str(id_)+'.jpg')
             return render_template("camera.html",message=3)
 
 
@@ -262,18 +206,18 @@ def facesetup():
         uncompressed_data = zlib.decompress(compressed_data)
         decoded_data = b64decode(uncompressed_data)
         
-        new_image_handle = open('./static/face/'+str(id_)+'.jpg', 'wb')
+        new_image_handle = open('vault/static/face/'+str(id_)+'.jpg', 'wb')
         
         new_image_handle.write(decoded_data)
         new_image_handle.close()
         image_of_bill = face_recognition.load_image_file(
-        './static/face/'+str(id_)+'.jpg')    
+        'vault/static/face/'+str(id_)+'.jpg')    
         try:
             bill_face_encoding = face_recognition.face_encodings(image_of_bill)[0]
         except:    
             return render_template("face.html",message = 1)
-        s3.upload_file('./static/face/'+str(id_)+'.jpg',os.getenv("BUCKET_NAME"),str(id_)+'.jpg')
-        os.remove('./static/face/'+str(id_)+'.jpg')
+        s3.upload_file('vault/static/face/'+str(id_)+'.jpg',os.getenv("BUCKET_NAME"),str(id_)+'.jpg')
+        os.remove('vault/static/face/'+str(id_)+'.jpg')
         return redirect("/home")
 
     else:
@@ -311,38 +255,7 @@ def delete(id):
     db.session.delete(file)
     db.session.commit()
 
-    return redirect(url_for('index'))    
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(60), nullable=False)
-    file = db.relationship('FileTable', backref='author', lazy=True)
-    
-    def __repr__(self):
-        return f"User('{self.username}', '{self.email}')"
-        
-
-class FileTable(db.Model):
-    __tablename__ = 'USER_FILES'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    file = db.Column(db.LargeBinary)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-
-    def __init__(self, name, file,user_id):
-        self.name = name
-        # self.tag = tag
-        self.file = file
-        self.user_id=user_id
-
-
-    def __repr__(self):
-        return f'FILE ID: {self.id} \n FILE NAME: {self.name} \n FILE TAG: {self.tag} \n'
-db.drop_all()
-db.create_all()
-
+    return redirect(url_for('index'))
 def errorhandler(e):
     """Handle error"""
     if not isinstance(e, HTTPException):
@@ -353,7 +266,3 @@ def errorhandler(e):
 # Listen for errors
 for code in default_exceptions:
     app.errorhandler(code)(errorhandler)
-
-if __name__ == '__main__':
-      app.debug = True
-      app.run()
