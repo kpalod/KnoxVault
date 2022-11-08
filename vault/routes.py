@@ -1,7 +1,7 @@
 import os
 from flask import Flask, flash, jsonify, redirect, render_template, request, session ,url_for,send_file
 from base64 import b64encode, b64decode
-from vault import app
+from vault import application
 from vault import s3
 from vault import bcrypt
 from vault import db
@@ -14,20 +14,20 @@ from io import BytesIO
 import zlib
 
 import tempfile
-@app.route("/")
+@application.route("/")
 @login_required
 def home():
 
     return redirect("/home")
 
-@app.route("/home")
+@application.route("/home")
 @login_required
 def index():
     files = FileTable.query.filter_by(user_id=session["user_id"]).all()
     return render_template("index.html",files=files)
 
 
-@app.route("/login", methods=["GET", "POST"])
+@application.route("/login", methods=["GET", "POST"])
 def login():
     """Log user in"""
 
@@ -65,7 +65,7 @@ def login():
         return render_template("login.html")
 
 
-@app.route("/logout")
+@application.route("/logout")
 def logout():
     """Log user out"""
 
@@ -77,7 +77,7 @@ def logout():
 
 
 
-@app.route("/register", methods=["GET", "POST"])
+@application.route("/register", methods=["GET", "POST"])
 def register():
     """Register user"""
 
@@ -127,7 +127,7 @@ def register():
 
 
 
-@app.route("/facereg", methods=["GET", "POST"])
+@application.route("/facereg", methods=["GET", "POST"])
 def facereg():
     session.clear()
     if request.method == "POST":
@@ -191,14 +191,10 @@ def facereg():
 
 
 
-@app.route("/facesetup", methods=["GET", "POST"])
+@application.route("/facesetup", methods=["GET", "POST"])
 def facesetup():
     if request.method == "POST":
-
-
         encoded_image = (request.form.get("pic")+"==").encode('utf-8')
-    
-
         id_=User.query.filter_by(id=session["user_id"]).first().id
         # id_ = db.execute("SELECT id FROM users WHERE id = :user_id", user_id=session["user_id"])[0]["id"]    
         compressed_data = zlib.compress(encoded_image, 9) 
@@ -223,7 +219,7 @@ def facesetup():
     else:
         return render_template("face.html")
     
-@app.route("/upload",methods=["GET","POST"])
+@application.route("/upload",methods=["GET","POST"])
 @login_required
 def upload():
     if request.method == "POST":
@@ -236,7 +232,7 @@ def upload():
     else:
         return render_template("upload.html")
     
-@app.route('/retrieve/<id>')
+@application.route('/retrieve/<id>')
 def retrieve(id):
     file = FileTable.query.filter_by(id=id).first()
 
@@ -245,7 +241,7 @@ def retrieve(id):
 
     return send_file(BytesIO(file.file), download_name=f'{file.name}')
 
-@app.route('/delete/<id>')
+@application.route('/delete/<id>')
 def delete(id):
     file = FileTable.query.filter_by(id=id).first()
 
@@ -265,4 +261,4 @@ def errorhandler(e):
 
 # Listen for errors
 for code in default_exceptions:
-    app.errorhandler(code)(errorhandler)
+    application.errorhandler(code)(errorhandler)
