@@ -1,4 +1,4 @@
-# Cloud-Vault-with-facial-recognition
+# KnoxVault
 An encrypted file upload platform with facial recognition technology
 
 This is a flask based application for file uploading viewing and deleting.
