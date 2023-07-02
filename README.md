@@ -52,15 +52,21 @@ Knoxvault is a secure and user-friendly cloud-based vault application that provi
 ## How to run the Application locally 
 
 1. Clone the repository:
-   ```git clone https://github.com/kpalod/KnoxVault/tree/main```
-2. Navigate to the directory and install all the required libraries
+   ```
+   git clone https://github.com/kpalod/KnoxVault/tree/main
 
-   ``` cd KnoxVault
+   ```
+3. Navigate to the directory and install all the required libraries
+
+   ```
+   cd KnoxVault
 
    pip install -r requirements.txt
+
    ```
 
-**NOTE** : You may have issues installing the face_recognition library due to CMAKE issues, use linux instead of windows if possible or install the required tools using Microsoft Visual studio
+**NOTE** : 
+- You may have issues installing the face_recognition library due to CMAKE issues, use linux instead of windows if possible or install the required tools using Microsoft Visual studio
 
 4. Create a file named '.env' and add the following details to your file:
 ```
@@ -72,9 +78,13 @@ BUCKET_NAME='## bucket name ##'
 ```
 
 
-NOTE : If you dont want to use S3 bucket in your app yet, check the previous commits and you can find a version where S3 was not used yet. 
+**NOTE** : 
+- If you dont want to use S3 bucket in your app yet, check the previous commits and you can find a version where S3 was not used yet. 
 
 4. Run the application:
 
-``` python application.py ```
+``` 
+python application.py
+
+```
 
