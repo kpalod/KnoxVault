@@ -66,7 +66,7 @@ Knoxvault is a secure and user-friendly cloud-based vault application that provi
    ```
 
 **NOTE** : 
-- You may have issues installing the face_recognition library due to CMAKE issues, use linux instead of windows if possible or install the required tools using Microsoft Visual studio
+- You may have problems installing the face_recognition library due to CMAKE build issues, use linux instead of windows if possible or install the required tools using Microsoft Visual studio
 
 4. Create a file named '.env' and add the following details to your file:
 ```
