@@ -30,4 +30,21 @@ Knoxvault is a secure and user-friendly cloud-based vault application that provi
 :globe_with_meridians: **Custom Domain and SSL/TLS Support**:
 - The application can be mapped to a custom domain using AWS Certificate Manager and AWS Route 53, providing a secure and professional user experience.
 
+## Technologies Used  
+
+- **Flask**: Python web framework for building the application.
+
+- **face_recognition**: A Python library for face detection and recognition.
+
+- **AWS RDS** (PostgreSQL): Database service for storing user information.
+
+- **AWS S3**: Object storage service for securely storing user photos.
+ 
+- **AWS Boto3**: Python SDK for interacting with AWS services.
+
+- **AWS Elastic Beanstalk**: Service for deploying and managing applications in the AWS cloud.
+
+- **AWS Certificate Manager**: Service for managing SSL/TLS certificates.
+
+- **AWS Route 53**: DNS web service for mapping the Beanstalk URL to a custom domain.
 
