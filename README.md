@@ -87,4 +87,13 @@ BUCKET_NAME='## bucket name ##'
 python application.py
 
 ```
+## How to deploy the application on AWS 
+1. Change the branch to AWS-EB
+2. Download the zip file
+3. Change the configuration of your S3 bucket tokens
+4. Chnage the endpoint url of your Database
+5. DEploy on AWS elastic Bean Stalk by uploading the updated ZIP file. (If facing issues in deployment, try changing instance from t2.micro to t2.medium
 
+   
+
+   
